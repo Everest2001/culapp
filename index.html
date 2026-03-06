@@ -45,49 +45,69 @@ canvas#capture{display:none;}
   padding:14px 16px 48px;
   background:linear-gradient(to top,rgba(0,0,0,0.9) 0%,rgba(0,0,0,0.35) 65%,transparent 100%);}
 
-/* SETTINGS */
-#settings-panel{width:100%;max-width:400px;
-  background:rgba(22,22,22,0.95);border:1px solid rgba(255,255,255,0.1);
-  border-radius:22px;padding:20px 18px;
-  display:flex;flex-direction:column;gap:18px;
-  opacity:0;transform:translateY(8px);pointer-events:none;
-  transition:opacity .2s,transform .2s;
-  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}
-#settings-panel.open{opacity:1;transform:translateY(0);pointer-events:all;}
+/* SIDE MENU */
+#side-menu{
+  position:absolute;left:0;top:0;bottom:0;
+  width:72px;z-index:10;
+  display:none; /* shown after camera starts */
+  flex-direction:column;align-items:center;justify-content:center;
+  gap:6px;padding:12px 8px;
+}
+.smenu-item{
+  width:56px;padding:10px 4px;border-radius:16px;
+  background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.1);
+  color:rgba(255,255,255,0.55);
+  font-size:8px;letter-spacing:1px;text-transform:uppercase;font-weight:700;
+  cursor:pointer;text-align:center;line-height:1.3;
+  transition:all .15s;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+}
+.smenu-item svg{display:block;margin:0 auto 4px;}
+.smenu-item.active{
+  background:rgba(255,255,255,0.92);color:#000;
+  border-color:transparent;
+}
+.smenu-item.hidden{display:none;}
+.smenu-item:active{transform:scale(.92);}
 
-.sec-label{color:rgba(255,255,255,0.32);font-size:9px;letter-spacing:3px;
-  text-transform:uppercase;padding-bottom:8px;
-  border-bottom:1px solid rgba(255,255,255,0.07);}
+/* ACTIVE CONTROL BAR — single strip above bottom controls */
+#ctrl-bar{
+  width:100%;max-width:400px;
+  min-height:56px;
+  display:flex;align-items:center;gap:14px;
+  padding:0 4px;
+  opacity:0;transform:translateY(4px);pointer-events:none;
+  transition:opacity .18s,transform .18s;
+}
+#ctrl-bar.show{opacity:1;transform:translateY(0);pointer-events:all;}
+#ctrl-bar-label{
+  color:rgba(255,255,255,0.5);font-size:9px;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;
+  width:72px;flex-shrink:0;
+}
+#ctrl-bar-inner{flex:1;display:flex;align-items:center;gap:10px;}
 
-.ctrl-row{display:flex;align-items:center;gap:14px;min-height:44px;}
-.ctrl-lbl{color:#fff;font-size:13px;font-weight:600;
-  width:96px;flex-shrink:0;line-height:1.25;}
-.ctrl-lbl em{display:block;color:rgba(255,255,255,0.35);
-  font-style:normal;font-size:9px;font-weight:500;
-  letter-spacing:1.5px;text-transform:uppercase;margin-top:3px;}
-
-.sw{flex:1;display:flex;align-items:center;gap:10px;}
 input[type=range]{-webkit-appearance:none;flex:1;height:5px;
-  background:rgba(255,255,255,0.18);border-radius:5px;outline:none;}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;
-  background:#fff;border-radius:50%;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,0.6);}
-.ctrl-val{color:#fff;font-size:13px;font-weight:700;width:40px;text-align:right;flex-shrink:0;}
+  background:rgba(255,255,255,0.2);border-radius:5px;outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;
+  background:#fff;border-radius:50%;cursor:pointer;box-shadow:0 2px 14px rgba(0,0,0,0.6);}
+.ctrl-val{color:#fff;font-size:14px;font-weight:700;width:42px;text-align:right;flex-shrink:0;}
 
 .color-wrap{display:flex;align-items:center;gap:12px;flex:1;}
-input[type=color]{-webkit-appearance:none;width:52px;height:40px;
-  border:2px solid rgba(255,255,255,0.22);border-radius:12px;
+input[type=color]{-webkit-appearance:none;width:52px;height:42px;
+  border:2px solid rgba(255,255,255,0.25);border-radius:12px;
   background:none;padding:2px;cursor:pointer;}
 input[type=color]::-webkit-color-swatch-wrapper{padding:0;}
 input[type=color]::-webkit-color-swatch{border-radius:8px;border:none;}
-.color-hex{color:rgba(255,255,255,0.5);font-size:12px;
-  letter-spacing:1px;text-transform:uppercase;font-weight:600;}
+.color-hex{color:rgba(255,255,255,0.55);font-size:12px;
+  letter-spacing:1px;text-transform:uppercase;font-weight:700;}
 
-.upload-row{display:flex;align-items:center;gap:12px;cursor:pointer;
-  border:1.5px dashed rgba(255,255,255,0.2);border-radius:14px;
-  padding:13px 16px;background:rgba(255,255,255,0.03);}
-.upload-row:active{background:rgba(255,255,255,0.08);}
-.upload-row span{color:rgba(255,255,255,0.65);font-size:11px;
-  letter-spacing:1.5px;text-transform:uppercase;font-weight:600;}
+.upload-bar{display:flex;align-items:center;gap:10px;cursor:pointer;flex:1;
+  border:1.5px dashed rgba(255,255,255,0.25);border-radius:14px;
+  padding:10px 14px;background:rgba(255,255,255,0.04);}
+.upload-bar:active{background:rgba(255,255,255,0.1);}
+.upload-bar span{color:rgba(255,255,255,0.7);font-size:10px;
+  letter-spacing:1.5px;text-transform:uppercase;font-weight:700;}
 
 /* MODES */
 #mode-switcher{display:flex;gap:7px;width:100%;max-width:400px;}
@@ -151,53 +171,35 @@ input[type=color]::-webkit-color-swatch{border-radius:8px;border:none;}
   </div>
   <div id="flash"></div>
 
+  <!-- SIDE MENU -->
+  <div id="side-menu">
+    <button class="smenu-item" id="sm-stroke" onclick="openCtrl('stroke')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      Colore
+    </button>
+    <button class="smenu-item" id="sm-opacity" onclick="openCtrl('opacity')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18"/></svg>
+      Opacità
+    </button>
+    <button class="smenu-item" id="sm-size" onclick="openCtrl('size')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+      Size
+    </button>
+    <button class="smenu-item hidden" id="sm-bg" onclick="openCtrl('bg')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="2" y="2" width="20" height="20" rx="4"/></svg>
+      Sfondo
+    </button>
+    <button class="smenu-item hidden" id="sm-fill" onclick="openCtrl('fill')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      Foto
+    </button>
+  </div>
+
   <div id="ui">
-    <div id="settings-panel">
 
-      <div class="sec-label">Logo</div>
-
-      <div class="ctrl-row">
-        <span class="ctrl-lbl">Colore linee<em>Stroke</em></span>
-        <div class="color-wrap">
-          <input type="color" id="stroke-color" value="#ffffff" oninput="onStroke(this.value)">
-          <span class="color-hex" id="stroke-hex">#ffffff</span>
-        </div>
-      </div>
-
-      <div class="ctrl-row">
-        <span class="ctrl-lbl">Opacità<em>Logo</em></span>
-        <div class="sw">
-          <input type="range" id="sl-op" min="10" max="100" value="95" oninput="onOpacity(this.value)">
-          <span class="ctrl-val" id="v-op">95%</span>
-        </div>
-      </div>
-
-      <div class="ctrl-row">
-        <span class="ctrl-lbl">Dimensione<em>Size</em></span>
-        <div class="sw">
-          <input type="range" id="sl-sz" min="40" max="100" value="90" oninput="onSize(this.value)">
-          <span class="ctrl-val" id="v-sz">90%</span>
-        </div>
-      </div>
-
-      <div class="sec-label" id="sec-bg" style="display:none">Sfondo</div>
-      <div class="ctrl-row" id="row-bg" style="display:none">
-        <span class="ctrl-lbl">Colore<em>Sfondo</em></span>
-        <div class="color-wrap">
-          <input type="color" id="bg-color" value="#e8334a" oninput="onBg(this.value)">
-          <span class="color-hex" id="bg-hex">#e8334a</span>
-        </div>
-      </div>
-
-      <div class="sec-label" id="sec-fill" style="display:none">Immagine interna</div>
-      <div class="upload-row" id="row-fill" style="display:none" onclick="document.getElementById('fill-input').click()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
-          <polyline points="21 15 16 10 5 21"/>
-        </svg>
-        <span id="fill-label">Carica Foto / Texture</span>
-      </div>
-
+    <div id="ctrl-bar">
+      <span id="ctrl-bar-label">—</span>
+      <div id="ctrl-bar-inner"></div>
     </div>
 
     <div id="mode-switcher">
@@ -207,7 +209,7 @@ input[type=color]::-webkit-color-swatch{border-radius:8px;border:none;}
     </div>
 
     <div id="bottom-row">
-      <button class="icon-btn" id="settings-btn" onclick="toggleSettings()">
+      <button class="icon-btn" id="settings-btn" onclick="toggleSideMenu()">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"/>
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
@@ -400,30 +402,99 @@ imgStroke.onload=onReady; imgSolid.onload=onReady;
 if(imgStroke.complete)onReady(); else if(imgSolid.complete)onReady();
 
 // ── CONTROLS ──
+let activeCtrl=null;
+
 function setMode(m){
   mode=m;
   document.querySelectorAll('.mode-btn').forEach((b,i)=>b.classList.toggle('active',i+1===m));
   const s23=m===2||m===3;
-  document.getElementById('sec-bg').style.display  =s23?'block':'none';
-  document.getElementById('row-bg').style.display  =s23?'flex':'none';
-  document.getElementById('sec-fill').style.display=m===3?'block':'none';
-  document.getElementById('row-fill').style.display=m===3?'flex':'none';
+  document.getElementById('sm-bg').classList.toggle('hidden',!s23);
+  document.getElementById('sm-fill').classList.toggle('hidden',m!==3);
   document.querySelectorAll('.corner').forEach(c=>c.style.opacity=m===1?'1':'0');
+  // close active ctrl if it's no longer relevant
+  if(activeCtrl==='bg'&&!s23) closeCtrl();
+  if(activeCtrl==='fill'&&m!==3) closeCtrl();
 }
-function onStroke(v){strokeColor=v;document.getElementById('stroke-hex').textContent=v;}
-function onBg(v){bgColor=v;document.getElementById('bg-hex').textContent=v;}
-function onOpacity(v){logoOpacity=v/100;document.getElementById('v-op').textContent=v+'%';}
-function onSize(v){logoSize=v/100;document.getElementById('v-sz').textContent=v+'%';}
-function toggleSettings(){
-  settingsOpen=!settingsOpen;
-  document.getElementById('settings-panel').classList.toggle('open',settingsOpen);
-  document.getElementById('settings-btn').classList.toggle('on',settingsOpen);
+
+function openCtrl(name){
+  // Toggle off if already active
+  if(activeCtrl===name){closeCtrl();return;}
+  activeCtrl=name;
+  // Highlight menu item
+  document.querySelectorAll('.smenu-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sm-'+name)?.classList.add('active');
+
+  const bar=document.getElementById('ctrl-bar');
+  const inner=document.getElementById('ctrl-bar-inner');
+  const lbl=document.getElementById('ctrl-bar-label');
+
+  inner.innerHTML='';
+
+  if(name==='stroke'){
+    lbl.textContent='Colore';
+    inner.innerHTML=\`
+      <div class="color-wrap">
+        <input type="color" id="stroke-color" value="\${strokeColor}" oninput="onStroke(this.value)">
+        <span class="color-hex" id="stroke-hex">\${strokeColor}</span>
+      </div>\`;
+  } else if(name==='opacity'){
+    lbl.textContent='Opacità';
+    const pct=Math.round(logoOpacity*100);
+    inner.innerHTML=\`
+      <input type="range" id="sl-op" min="10" max="100" value="\${pct}" oninput="onOpacity(this.value)">
+      <span class="ctrl-val" id="v-op">\${pct}%</span>\`;
+  } else if(name==='size'){
+    lbl.textContent='Size';
+    const pct=Math.round(logoSize*100);
+    inner.innerHTML=\`
+      <input type="range" id="sl-sz" min="40" max="100" value="\${pct}" oninput="onSize(this.value)">
+      <span class="ctrl-val" id="v-sz">\${pct}%</span>\`;
+  } else if(name==='bg'){
+    lbl.textContent='Sfondo';
+    inner.innerHTML=\`
+      <div class="color-wrap">
+        <input type="color" id="bg-color" value="\${bgColor}" oninput="onBg(this.value)">
+        <span class="color-hex" id="bg-hex">\${bgColor}</span>
+      </div>\`;
+  } else if(name==='fill'){
+    lbl.textContent='Foto';
+    inner.innerHTML=\`
+      <div class="upload-bar" onclick="document.getElementById('fill-input').click()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+        <span id="fill-label">Carica Foto / Texture</span>
+      </div>\`;
+  }
+
+  bar.classList.add('show');
 }
+
+function closeCtrl(){
+  activeCtrl=null;
+  document.querySelectorAll('.smenu-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('ctrl-bar').classList.remove('show');
+}
+
+function toggleSideMenu(){
+  const sm=document.getElementById('side-menu');
+  const isOpen=sm.style.display==='flex';
+  sm.style.display=isOpen?'none':'flex';
+  document.getElementById('settings-btn').classList.toggle('on',!isOpen);
+  if(isOpen)closeCtrl();
+}
+
+function onStroke(v){strokeColor=v;const el=document.getElementById('stroke-hex');if(el)el.textContent=v;}
+function onBg(v){bgColor=v;const el=document.getElementById('bg-hex');if(el)el.textContent=v;}
+function onOpacity(v){logoOpacity=v/100;const el=document.getElementById('v-op');if(el)el.textContent=v+'%';}
+function onSize(v){logoSize=v/100;const el=document.getElementById('v-sz');if(el)el.textContent=v+'%';}
+
 function onFillUpload(e){
   const f=e.target.files[0];if(!f)return;
   const r=new FileReader();
   r.onload=ev=>{fillImg=new Image();fillImg.src=ev.target.result;
-    document.getElementById('fill-label').textContent='Cambia Foto / Texture';
+    const lbl=document.getElementById('fill-label');if(lbl)lbl.textContent='Cambia Foto';
     showToast('Immagine caricata ✓');};
   r.readAsDataURL(f);e.target.value='';
 }
@@ -438,6 +509,7 @@ async function startCamera(){
     const v=document.getElementById('video');
     v.srcObject=stream;await v.play();
     document.getElementById('start-screen').style.display='none';
+    document.getElementById('side-menu').style.display='flex';
     resize();if(!rafId)render();
   }catch(e){
     document.getElementById('start-screen').style.display='none';
