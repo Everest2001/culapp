@@ -305,19 +305,18 @@ function render(){
       ctx.globalAlpha=1;
     }
   } else {
-    // Full square solid bg
-    ctx.globalAlpha=logoOpacity;
+    // Full square solid bg — always full opacity, no scaling
+    ctx.globalAlpha=1;
     ctx.fillStyle=bgColor;
     ctx.fillRect(0,0,W,H);
 
-    // Punch holes (transparent areas of mask → cut through bg → shows video underneath)
+    // Punch holes where mask is transparent → camera shows through
     if(imgSolid.complete&&imgSolid.naturalWidth){
       const hc=buildHoleCanvas(imgSolid,W,H,lx,ly,sz);
       ctx.globalCompositeOperation='destination-out';
       ctx.drawImage(hc,0,0);
       ctx.globalCompositeOperation='source-over';
     }
-    ctx.globalAlpha=1;
 
     // Mode 3: fill image into holes
     if(mode===3&&fillImg&&fillImg.complete&&fillImg.naturalWidth&&imgSolid.complete){
@@ -355,8 +354,8 @@ if(imgStroke.complete)onRdy(); else if(imgSolid.complete)onRdy();
 // ── SIDE MENU ──
 function toggleSideMenu(){
   const sm=document.getElementById('side-menu');
-  const isOpen=sm.classList.contains('open');
-  sm.classList.toggle('open',!isOpen);
+  const isOpen=sm.style.display==='flex';
+  sm.style.display=isOpen?'none':'flex';
   document.getElementById('settings-btn').classList.toggle('on',!isOpen);
   if(isOpen) closeCtrl();
 }
@@ -485,14 +484,12 @@ function takePhoto(){
     if(imgStroke.complete) cx.drawImage(recolor(imgStroke,sz,sz,strokeColor),lx,ly);
     cx.globalAlpha=1;
   } else {
-    cx.globalAlpha=logoOpacity;
     cx.fillStyle=bgColor; cx.fillRect(0,0,OUT,OUT);
     if(imgSolid.complete){
       const hc=buildHoleCanvas(imgSolid,OUT,OUT,lx,ly,sz);
       cx.globalCompositeOperation='destination-out'; cx.drawImage(hc,0,0);
       cx.globalCompositeOperation='source-over';
     }
-    cx.globalAlpha=1;
     // Redraw camera into holes
     cx.globalCompositeOperation='destination-over';
     cx.drawImage(video,sx,sy,side,side,0,0,OUT,OUT);
