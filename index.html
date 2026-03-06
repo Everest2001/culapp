@@ -311,11 +311,11 @@ function render(){
   ctx.clearRect(0,0,W,H);
   if(!W||!H){rafId=requestAnimationFrame(render);return;}
 
+  // Logo scales with logoSize. BG always fills the full square.
   const sz=Math.min(W,H)*logoSize;
   const lx=(W-sz)/2, ly=(H-sz)/2;
 
   if(mode===1){
-    // Stroke lines over transparent canvas (camera visible everywhere)
     if(imgStroke.complete&&imgStroke.naturalWidth){
       ctx.globalAlpha=logoOpacity;
       ctx.drawImage(recolor(imgStroke,sz,sz,strokeColor),lx,ly);
@@ -323,42 +323,67 @@ function render(){
     }
 
   } else {
-    // Solid area first (white→bgColor, transparent=holes → camera shows through)
+    // BG solid color fills entire square first
+    ctx.globalAlpha=logoOpacity;
+    ctx.fillStyle=bgColor;
+    ctx.fillRect(0,0,W,H);
+    ctx.globalAlpha=1;
+
+    // Solid mask on top (white→bgColor opaque, transparent=holes → camera shows through)
+    // We draw it at logo size centered — this covers the logo shape area with solid color
+    // and leaves holes transparent for the camera
     if(imgSolid.complete&&imgSolid.naturalWidth){
+      // For the area OUTSIDE the logo shape but inside the square,
+      // the plain fillRect above already covers it with bgColor.
+      // The solid mask just needs to paint bgColor over the logo's solid areas
+      // and leave holes transparent — but since camera is below, holes show camera.
+      // Actually: we need to punch holes in the solid bg we just drew.
+      // Strategy: draw solid bg, then cut holes using destination-out, then draw stroke.
+
+      // Step 1: already drawn solid bg above.
+      // Step 2: punch holes where imgSolid is transparent (the holes)
+      // imgSolid: opaque=solid area, transparent=hole
+      // We want to KEEP opaque areas and CUT transparent areas from our bg.
+      // Use destination-out with inverted mask.
+
+      // Build inverse: opaque where imgSolid is transparent (the holes)
+      const holeC=document.createElement('canvas');holeC.width=W;holeC.height=H;
+      const hx=holeC.getContext('2d');
+      hx.drawImage(imgSolid,lx,ly,sz,sz);
+      const d=hx.getImageData(0,0,W,H),p=d.data;
+      for(let i=0;i<p.length;i+=4){
+        const a=p[i+3];
+        p[i]=0;p[i+1]=0;p[i+2]=0;
+        p[i+3]=a>10?0:255; // where solid → transparent; where hole → opaque black
+      }
+      hx.putImageData(d,0,0);
+
+      // Cut holes from the bg we drew
+      ctx.globalCompositeOperation='destination-out';
       ctx.globalAlpha=logoOpacity;
-      ctx.drawImage(recolor(imgSolid,sz,sz,bgColor),lx,ly);
+      ctx.drawImage(holeC,0,0);
       ctx.globalAlpha=1;
+      ctx.globalCompositeOperation='source-over';
     }
 
-    // Mode 3: draw fill image clipped to the hole areas
+    // Mode 3: fill image into the holes
     if(mode===3&&fillImg&&fillImg.complete&&fillImg.naturalWidth&&imgSolid.complete){
-      // Build inverse mask: transparent where solid is opaque, opaque where holes are
-      const invC=document.createElement('canvas'); invC.width=sz; invC.height=sz;
+      const invC=document.createElement('canvas');invC.width=sz;invC.height=sz;
       const ix=invC.getContext('2d');
       ix.drawImage(imgSolid,0,0,sz,sz);
       const d=ix.getImageData(0,0,sz,sz),p=d.data;
-      for(let i=0;i<p.length;i+=4){
-        // Where alpha>0 (solid area) → make transparent
-        // Where alpha=0 (hole) → make opaque white
-        const a=p[i+3];
-        p[i]=255;p[i+1]=255;p[i+2]=255;
-        p[i+3]=a>10?0:255;
-      }
+      for(let i=0;i<p.length;i+=4){const a=p[i+3];p[i]=p[i+1]=p[i+2]=255;p[i+3]=a>10?0:255;}
       ix.putImageData(d,0,0);
-
-      // Draw fill image, masked to holes
-      const fillC=document.createElement('canvas'); fillC.width=sz; fillC.height=sz;
-      const fx=fillC.getContext('2d');
+      const fc=document.createElement('canvas');fc.width=sz;fc.height=sz;
+      const fx=fc.getContext('2d');
       const sc=Math.max(sz/fillImg.naturalWidth,sz/fillImg.naturalHeight);
-      const fw=fillImg.naturalWidth*sc,fh=fillImg.naturalHeight*sc;
-      fx.drawImage(fillImg,(sz-fw)/2,(sz-fh)/2,fw,fh);
-      fx.globalCompositeOperation='destination-in';
-      fx.drawImage(invC,0,0);
-
-      ctx.drawImage(fillC,lx,ly);
+      fx.drawImage(fillImg,(sz-fillImg.naturalWidth*sc)/2,(sz-fillImg.naturalHeight*sc)/2,
+        fillImg.naturalWidth*sc,fillImg.naturalHeight*sc);
+      fx.globalCompositeOperation='destination-in';fx.drawImage(invC,0,0);
+      ctx.drawImage(fc,lx,ly);
     }
 
-    // Stroke lines always on top
+    // Stroke lines on top
     if(imgStroke.complete&&imgStroke.naturalWidth){
       ctx.globalAlpha=logoOpacity;
       ctx.drawImage(recolor(imgStroke,sz,sz,strokeColor),lx,ly);
@@ -436,22 +461,40 @@ function takePhoto(){
   // Draw camera frame
   cx.drawImage(video,sx,sy,side,side,0,0,OUT,OUT);
 
-  cx.globalAlpha=logoOpacity;
-
   if(mode===1){
+    cx.globalAlpha=logoOpacity;
     if(imgStroke.complete)cx.drawImage(recolor(imgStroke,sz,sz,strokeColor),lx,ly);
+    cx.globalAlpha=1;
 
   } else {
-    // Solid bg layer
-    if(imgSolid.complete)cx.drawImage(recolor(imgSolid,sz,sz,bgColor),lx,ly);
+    // Full square bg
+    cx.globalAlpha=logoOpacity;
+    cx.fillStyle=bgColor; cx.fillRect(0,0,OUT,OUT);
+    // Punch holes
+    if(imgSolid.complete){
+      const hC=document.createElement('canvas');hC.width=OUT;hC.height=OUT;
+      const hx=hC.getContext('2d');hx.drawImage(imgSolid,lx,ly,sz,sz);
+      const hd=hx.getImageData(0,0,OUT,OUT),hp=hd.data;
+      for(let i=0;i<hp.length;i+=4){const a=hp[i+3];hp[i]=0;hp[i+1]=0;hp[i+2]=0;hp[i+3]=a>10?0:255;}
+      hx.putImageData(hd,0,0);
+      cx.globalCompositeOperation='destination-out';cx.drawImage(hC,0,0);
+      cx.globalCompositeOperation='source-over';
+    }
+    cx.globalAlpha=1;
+    // Redraw camera into the punched holes
+    cx.globalCompositeOperation='destination-over';
+    cx.drawImage(video,sx,sy,side,side,0,0,OUT,OUT);
+    cx.globalCompositeOperation='source-over';
+
+  if(false){// dummy
 
     if(mode===3&&fillImg&&fillImg.complete&&imgSolid.complete){
       const invC=document.createElement('canvas');invC.width=sz;invC.height=sz;
       const ix=invC.getContext('2d');
       ix.drawImage(imgSolid,0,0,sz,sz);
-      const d=ix.getImageData(0,0,sz,sz),p=d.data;
-      for(let i=0;i<p.length;i+=4){const a=p[i+3];p[i]=p[i+1]=p[i+2]=255;p[i+3]=a>10?0:255;}
-      ix.putImageData(d,0,0);
+      const hd2=ix.getImageData(0,0,sz,sz),hp2=hd2.data;
+      for(let i=0;i<hp2.length;i+=4){const a=hp2[i+3];hp2[i]=hp2[i+1]=hp2[i+2]=255;hp2[i+3]=a>10?0:255;}
+      ix.putImageData(hd2,0,0);
       const fc=document.createElement('canvas');fc.width=sz;fc.height=sz;
       const fx=fc.getContext('2d');
       const sc=Math.max(sz/fillImg.naturalWidth,sz/fillImg.naturalHeight);
@@ -460,11 +503,13 @@ function takePhoto(){
       fx.globalCompositeOperation='destination-in';fx.drawImage(invC,0,0);
       cx.drawImage(fc,lx,ly);
     }
+    } // close dummy if
 
+    cx.globalAlpha=logoOpacity;
     if(imgStroke.complete)cx.drawImage(recolor(imgStroke,sz,sz,strokeColor),lx,ly);
+    cx.globalAlpha=1;
   }
 
-  cx.globalAlpha=1;
   savePhoto(cap);
 }
 
