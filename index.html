@@ -529,7 +529,9 @@ function savePhoto(canvas){
     if(navigator.canShare){
       const f=new File([blob],fn,{type:'image/jpeg'});
       if(navigator.canShare({files:[f]})){
-        navigator.share({files:[f]}).then(()=>showToast('Foto salvata ✓')).catch(()=>dlFallback(blob,fn));
+        navigator.share({files:[f]})
+          .then(()=>{ showToast('Foto salvata ✓'); resetFill(); })
+          .catch(()=>dlFallback(blob,fn));
         return;
       }
     }
@@ -542,7 +544,6 @@ function dlFallback(blob,fn){
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(()=>URL.revokeObjectURL(a.href),3000);
   showToast('Foto salvata ✓');
-  resetFill();
 }
 
 function resetFill(){
