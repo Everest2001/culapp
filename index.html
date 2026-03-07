@@ -262,14 +262,10 @@ function recolor(src, w, h, color){
 }
 
 function buildHoleMask(src, W, H, lx, ly, sz){
-  // Returns canvas W×H: opaque where src has holes (transparent), transparent where solid
+  // Returns canvas W×H: logo area = opaque (punches through bg), outside = transparent
   const c=document.createElement('canvas'); c.width=W; c.height=H;
   const x=c.getContext('2d'); x.drawImage(src,lx,ly,sz,sz);
-  const d=x.getImageData(0,0,W,H), p=d.data;
-  for(let i=0;i<p.length;i+=4){
-    const a=p[i+3]; p[i]=0;p[i+1]=0;p[i+2]=0; p[i+3]=a>10?0:255;
-  }
-  x.putImageData(d,0,0); return c;
+  return c;
 }
 
 // ── RENDER (live preview) ──
@@ -314,17 +310,12 @@ function render(){
 
     // Fill image clipped to holes
     if(fillImg && fillImg.complete && fillImg.naturalWidth && imgSolid.complete){
-      const invC=document.createElement('canvas'); invC.width=sz; invC.height=sz;
-      const ix=invC.getContext('2d'); ix.drawImage(imgSolid,0,0,sz,sz);
-      const d=ix.getImageData(0,0,sz,sz), p=d.data;
-      for(let i=0;i<p.length;i+=4){const a=p[i+3];p[i]=p[i+1]=p[i+2]=255;p[i+3]=a>10?0:255;}
-      ix.putImageData(d,0,0);
       const fc=document.createElement('canvas'); fc.width=sz; fc.height=sz;
       const fx=fc.getContext('2d');
       const sc=Math.max(sz/fillImg.naturalWidth, sz/fillImg.naturalHeight);
       fx.drawImage(fillImg,(sz-fillImg.naturalWidth*sc)/2,(sz-fillImg.naturalHeight*sc)/2,
         fillImg.naturalWidth*sc, fillImg.naturalHeight*sc);
-      fx.globalCompositeOperation='destination-in'; fx.drawImage(invC,0,0);
+      fx.globalCompositeOperation='destination-in'; fx.drawImage(imgSolid,0,0,sz,sz);
       ctx.drawImage(fc,lx,ly);
     }
 
@@ -495,17 +486,12 @@ function takePhoto(){
 
     // Fill image in holes
     if(fillImg && fillImg.complete && imgSolid.complete){
-      const invC=document.createElement('canvas'); invC.width=sz; invC.height=sz;
-      const ix=invC.getContext('2d'); ix.drawImage(imgSolid,0,0,sz,sz);
-      const d=ix.getImageData(0,0,sz,sz), p=d.data;
-      for(let i=0;i<p.length;i+=4){const a=p[i+3];p[i]=p[i+1]=p[i+2]=255;p[i+3]=a>10?0:255;}
-      ix.putImageData(d,0,0);
       const fc=document.createElement('canvas'); fc.width=sz; fc.height=sz;
       const fx=fc.getContext('2d');
       const sc=Math.max(sz/fillImg.naturalWidth, sz/fillImg.naturalHeight);
       fx.drawImage(fillImg,(sz-fillImg.naturalWidth*sc)/2,(sz-fillImg.naturalHeight*sc)/2,
         fillImg.naturalWidth*sc, fillImg.naturalHeight*sc);
-      fx.globalCompositeOperation='destination-in'; fx.drawImage(invC,0,0);
+      fx.globalCompositeOperation='destination-in'; fx.drawImage(imgSolid,0,0,sz,sz);
       cx.drawImage(fc,lx,ly);
     }
 
