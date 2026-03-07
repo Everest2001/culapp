@@ -542,6 +542,13 @@ function dlFallback(blob,fn){
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(()=>URL.revokeObjectURL(a.href),3000);
   showToast('Foto salvata ✓');
+  resetFill();
+}
+
+function resetFill(){
+  fillImg=null;
+  const lbl=document.getElementById('fill-label');
+  if(lbl) lbl.textContent='Carica Foto / Texture';
 }
 
 function showToast(msg){
