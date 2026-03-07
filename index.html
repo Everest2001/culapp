@@ -42,11 +42,11 @@ canvas#capture{display:none;}
 #side-menu{
   position:absolute;
   left:0;right:0;
-  bottom:230px;
+  bottom:calc(50vh - 50vw + 10px);
   z-index:20;
-  display:none;
+  display:flex;
   flex-direction:row;align-items:center;justify-content:center;
-  gap:7px;padding:0 16px;
+  gap:7px;padding:0 16px 8px;
   pointer-events:all;
 }
 .smenu-btn{
@@ -213,12 +213,7 @@ input[type=color]::-webkit-color-swatch{border-radius:7px;border:none;}
     </div>
 
     <div id="bottom-row">
-      <button class="icon-btn" id="settings-btn" onclick="toggleSideMenu()">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>
-      </button>
+      <div style="width:56px;height:56px;"></div>
       <button id="shutter-btn" onclick="takePhoto()"></button>
       <button class="icon-btn" onclick="flipCamera()">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -362,14 +357,6 @@ imgStroke.onload=onRdy; imgSolid.onload=onRdy;
 if(imgStroke.complete)onRdy(); else if(imgSolid.complete)onRdy();
 
 // ── SIDE MENU ──
-function toggleSideMenu(){
-  const sm=document.getElementById('side-menu');
-  const isOpen=sm.style.display==='flex';
-  sm.style.display=isOpen?'none':'flex';
-  document.getElementById('settings-btn').classList.toggle('on',!isOpen);
-  if(isOpen) closeCtrl();
-}
-
 function openCtrl(name){
   if(activeCtrl===name){closeCtrl();return;}
   activeCtrl=name;
@@ -461,7 +448,6 @@ async function startCamera(){
     const v=document.getElementById('video');
     v.srcObject=stream; await v.play();
     document.getElementById('start-screen').style.display='none';
-    document.getElementById('side-menu').style.display='flex';
     resize(); if(!rafId) render();
   }catch(e){
     document.getElementById('start-screen').style.display='none';
