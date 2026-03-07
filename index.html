@@ -69,16 +69,20 @@ canvas#capture{display:none;}
 
 /* ── CTRL BAR ── */
 #ctrl-bar{
-  width:100%;max-width:400px;height:52px;
+  width:100%;max-width:400px;min-height:52px;
   display:flex;align-items:center;gap:14px;
-  padding:0 6px;
+  padding:10px 14px;
   opacity:0;
   transition:opacity .18s;
   pointer-events:none;
+  background:rgba(0,0,0,0.55);
+  border-radius:18px;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,0.1);
 }
 #ctrl-bar.show{opacity:1;pointer-events:all;}
 #ctrl-bar-lbl{
-  color:rgba(255,255,255,0.45);font-size:9px;font-weight:700;
+  color:rgba(255,255,255,0.75);font-size:9px;font-weight:700;
   letter-spacing:2px;text-transform:uppercase;width:68px;flex-shrink:0;
 }
 #ctrl-bar-inner{flex:1;display:flex;align-items:center;gap:10px;}
@@ -89,11 +93,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;heigh
   background:#fff;border-radius:50%;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,0.55);}
 .cv{color:#fff;font-size:14px;font-weight:700;width:42px;text-align:right;flex-shrink:0;}
 
-input[type=color]{-webkit-appearance:none;width:52px;height:42px;
-  border:2px solid rgba(255,255,255,0.25);border-radius:12px;
+input[type=color]{-webkit-appearance:none;width:44px;height:36px;
+  border:2px solid rgba(255,255,255,0.25);border-radius:10px;
   background:none;padding:2px;cursor:pointer;}
 input[type=color]::-webkit-color-swatch-wrapper{padding:0;}
-input[type=color]::-webkit-color-swatch{border-radius:8px;border:none;}
+input[type=color]::-webkit-color-swatch{border-radius:7px;border:none;}
 .chex{color:rgba(255,255,255,0.55);font-size:12px;letter-spacing:1px;
   text-transform:uppercase;font-weight:700;}
 
@@ -477,30 +481,40 @@ function takePhoto(){
   const cx=cap.getContext('2d');
   const sz=OUT*logoSize, lx=(OUT-sz)/2, ly=(OUT-sz)/2;
 
-  cx.drawImage(video,sx,sy,side,side,0,0,OUT,OUT);
-
   if(mode===1){
+    // Camera full frame + stroke overlay
+    cx.drawImage(video,sx,sy,side,side,0,0,OUT,OUT);
     cx.globalAlpha=logoOpacity;
     if(imgStroke.complete) cx.drawImage(recolor(imgStroke,sz,sz,strokeColor),lx,ly);
     cx.globalAlpha=1;
+
   } else {
-    cx.fillStyle=bgColor; cx.fillRect(0,0,OUT,OUT);
+    // Step 1: solid bg covers entire frame
+    cx.fillStyle=bgColor;
+    cx.fillRect(0,0,OUT,OUT);
+
+    // Step 2: punch holes through bg where mask is transparent
     if(imgSolid.complete){
       const hc=buildHoleCanvas(imgSolid,OUT,OUT,lx,ly,sz);
-      cx.globalCompositeOperation='destination-out'; cx.drawImage(hc,0,0);
+      cx.globalCompositeOperation='destination-out';
+      cx.drawImage(hc,0,0);
       cx.globalCompositeOperation='source-over';
     }
-    // Redraw camera into holes
+
+    // Step 3: draw camera BEHIND everything (fills the punched holes)
     cx.globalCompositeOperation='destination-over';
     cx.drawImage(video,sx,sy,side,side,0,0,OUT,OUT);
     cx.globalCompositeOperation='source-over';
 
+    // Step 4 (mode 3): draw fill image on top of camera inside holes
     if(mode===3&&fillImg&&fillImg.complete&&imgSolid.complete){
+      // Build hole mask: opaque where holes are
       const invC=document.createElement('canvas'); invC.width=sz; invC.height=sz;
       const ix=invC.getContext('2d'); ix.drawImage(imgSolid,0,0,sz,sz);
       const d=ix.getImageData(0,0,sz,sz),p=d.data;
       for(let i=0;i<p.length;i+=4){const a=p[i+3];p[i]=p[i+1]=p[i+2]=255;p[i+3]=a>10?0:255;}
       ix.putImageData(d,0,0);
+      // Draw fill clipped to hole shape
       const fc=document.createElement('canvas'); fc.width=sz; fc.height=sz;
       const fx=fc.getContext('2d');
       const sc=Math.max(sz/fillImg.naturalWidth,sz/fillImg.naturalHeight);
@@ -510,6 +524,7 @@ function takePhoto(){
       cx.drawImage(fc,lx,ly);
     }
 
+    // Step 5: stroke lines on top
     cx.globalAlpha=logoOpacity;
     if(imgStroke.complete) cx.drawImage(recolor(imgStroke,sz,sz,strokeColor),lx,ly);
     cx.globalAlpha=1;
