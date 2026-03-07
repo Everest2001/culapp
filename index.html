@@ -38,19 +38,21 @@ canvas#capture{display:none;}
 .sbtn:active{opacity:.8;}
 .sbtn.primary{background:#111;color:#fff;}
 
-/* ── SIDE MENU ── */
+/* ── TOP MENU ── */
 #side-menu{
-  position:absolute;left:0;top:0;bottom:0;width:68px;z-index:20;
+  position:absolute;top:0;left:0;right:0;z-index:20;
   display:none;
-  flex-direction:column;align-items:center;justify-content:center;
-  gap:8px;padding:16px 6px;
+  flex-direction:row;align-items:center;justify-content:center;
+  gap:8px;padding:10px 12px;
   pointer-events:all;
+  background:linear-gradient(to bottom,rgba(0,0,0,0.5) 0%,transparent 100%);
 }
 .smenu-btn{
-  width:56px;padding:9px 4px 7px;border-radius:16px;
+  flex:1;max-width:80px;
+  padding:8px 4px 6px;border-radius:14px;
   background:rgba(0,0,0,0.45);
   border:1px solid rgba(255,255,255,0.12);
-  color:rgba(255,255,255,0.6);
+  color:rgba(255,255,255,0.7);
   font-size:7.5px;letter-spacing:1px;text-transform:uppercase;font-weight:700;
   cursor:pointer;text-align:center;line-height:1.3;
   transition:all .15s;
@@ -309,20 +311,22 @@ function render(){
       ctx.globalAlpha=1;
     }
   } else {
-    // Full square solid bg — always full opacity, no scaling
-    ctx.globalAlpha=1;
-    ctx.fillStyle=bgColor;
-    ctx.fillRect(0,0,W,H);
+    // The overlay canvas is transparent — video element shows through the holes naturally.
+    // We just draw: bg-with-holes overlay, then fill (mode3), then stroke.
 
-    // Punch holes where mask is transparent → camera shows through
+    // Build bg overlay offscreen: solid color, holes punched
+    const bgC=document.createElement('canvas'); bgC.width=W; bgC.height=H;
+    const bx=bgC.getContext('2d');
+    bx.fillStyle=bgColor; bx.fillRect(0,0,W,H);
     if(imgSolid.complete&&imgSolid.naturalWidth){
       const hc=buildHoleCanvas(imgSolid,W,H,lx,ly,sz);
-      ctx.globalCompositeOperation='destination-out';
-      ctx.drawImage(hc,0,0);
-      ctx.globalCompositeOperation='source-over';
+      bx.globalCompositeOperation='destination-out';
+      bx.drawImage(hc,0,0);
+      bx.globalCompositeOperation='source-over';
     }
+    ctx.drawImage(bgC,0,0);
 
-    // Mode 3: fill image into holes
+    // Mode 3: fill image clipped to holes
     if(mode===3&&fillImg&&fillImg.complete&&fillImg.naturalWidth&&imgSolid.complete){
       const invC=document.createElement('canvas'); invC.width=sz; invC.height=sz;
       const ix=invC.getContext('2d');
@@ -482,39 +486,37 @@ function takePhoto(){
   const sz=OUT*logoSize, lx=(OUT-sz)/2, ly=(OUT-sz)/2;
 
   if(mode===1){
-    // Camera full frame + stroke overlay
+    // Camera base + stroke on top
     cx.drawImage(video,sx,sy,side,side,0,0,OUT,OUT);
     cx.globalAlpha=logoOpacity;
     if(imgStroke.complete) cx.drawImage(recolor(imgStroke,sz,sz,strokeColor),lx,ly);
     cx.globalAlpha=1;
 
   } else {
-    // Step 1: solid bg covers entire frame
-    cx.fillStyle=bgColor;
-    cx.fillRect(0,0,OUT,OUT);
+    // Step 1: camera is always the base layer
+    cx.drawImage(video,sx,sy,side,side,0,0,OUT,OUT);
 
-    // Step 2: punch holes through bg where mask is transparent
+    // Step 2: build bg overlay on offscreen canvas — solid color with holes punched
+    // Holes = transparent → camera shows through when drawn on top
+    const bgC=document.createElement('canvas'); bgC.width=OUT; bgC.height=OUT;
+    const bx=bgC.getContext('2d');
+    bx.fillStyle=bgColor; bx.fillRect(0,0,OUT,OUT);
     if(imgSolid.complete){
       const hc=buildHoleCanvas(imgSolid,OUT,OUT,lx,ly,sz);
-      cx.globalCompositeOperation='destination-out';
-      cx.drawImage(hc,0,0);
-      cx.globalCompositeOperation='source-over';
+      bx.globalCompositeOperation='destination-out';
+      bx.drawImage(hc,0,0);
+      bx.globalCompositeOperation='source-over';
     }
+    // Step 3: draw bg overlay on top of camera
+    cx.drawImage(bgC,0,0);
 
-    // Step 3: draw camera BEHIND everything (fills the punched holes)
-    cx.globalCompositeOperation='destination-over';
-    cx.drawImage(video,sx,sy,side,side,0,0,OUT,OUT);
-    cx.globalCompositeOperation='source-over';
-
-    // Step 4 (mode 3): draw fill image on top of camera inside holes
+    // Step 4 (mode 3): draw fill image clipped to holes, on top of camera
     if(mode===3&&fillImg&&fillImg.complete&&imgSolid.complete){
-      // Build hole mask: opaque where holes are
       const invC=document.createElement('canvas'); invC.width=sz; invC.height=sz;
       const ix=invC.getContext('2d'); ix.drawImage(imgSolid,0,0,sz,sz);
       const d=ix.getImageData(0,0,sz,sz),p=d.data;
       for(let i=0;i<p.length;i+=4){const a=p[i+3];p[i]=p[i+1]=p[i+2]=255;p[i+3]=a>10?0:255;}
       ix.putImageData(d,0,0);
-      // Draw fill clipped to hole shape
       const fc=document.createElement('canvas'); fc.width=sz; fc.height=sz;
       const fx=fc.getContext('2d');
       const sc=Math.max(sz/fillImg.naturalWidth,sz/fillImg.naturalHeight);
@@ -524,7 +526,7 @@ function takePhoto(){
       cx.drawImage(fc,lx,ly);
     }
 
-    // Step 5: stroke lines on top
+    // Step 5: stroke on top
     cx.globalAlpha=logoOpacity;
     if(imgStroke.complete) cx.drawImage(recolor(imgStroke,sz,sz,strokeColor),lx,ly);
     cx.globalAlpha=1;
