@@ -261,12 +261,7 @@ function recolor(src, w, h, color){
   x.putImageData(d,0,0); return c;
 }
 
-function buildHoleMask(src, W, H, lx, ly, sz){
-  // Returns canvas W×H: logo area = opaque (punches through bg), outside = transparent
-  const c=document.createElement('canvas'); c.width=W; c.height=H;
-  const x=c.getContext('2d'); x.drawImage(src,lx,ly,sz,sz);
-  return c;
-}
+
 
 // ── RENDER (live preview) ──
 // The overlay-canvas sits on top of the video element.
@@ -291,35 +286,50 @@ function render(){
     }
 
   } else {
-    // Build bg overlay on offscreen canvas: solid color, holes punched
-    if(imgSolid.complete && imgSolid.naturalWidth){
-      const bgC=document.createElement('canvas'); bgC.width=W; bgC.height=H;
-      const bx=bgC.getContext('2d');
-      bx.fillStyle=bgColor;
-      bx.globalAlpha=bgOpacity;
-      bx.fillRect(0,0,W,H);
-      bx.globalAlpha=1;
-      // Punch holes
-      const hc=buildHoleMask(imgSolid,W,H,lx,ly,sz);
-      bx.globalCompositeOperation='destination-out';
-      bx.drawImage(hc,0,0);
-      bx.globalCompositeOperation='source-over';
-      // Draw onto main canvas — holes are transparent so video shows through
-      ctx.drawImage(bgC,0,0);
-    }
+    // ── MODE 2 compositing ──
+    // Layer order (bottom to top):
+    //   1. video shows through everywhere (canvas is transparent by default)
+    //   2. bgColor overlay painted ONLY outside the logo shape
+    //   3. fill texture painted ONLY inside the logo shape (replaces camera there)
+    //   4. stroke lines on top
 
-    // Fill image clipped to holes
-    if(fillImg && fillImg.complete && fillImg.naturalWidth && imgSolid.complete){
+    // Get the logo shape mask at render size
+    // maskC: logo interior pixels = opaque, outside = transparent
+    const maskC=document.createElement('canvas'); maskC.width=sz; maskC.height=sz;
+    const mx=maskC.getContext('2d'); mx.drawImage(imgSolid,0,0,sz,sz);
+
+    // Step 2: bgColor OUTSIDE logo
+    // Paint bgColor on full canvas, then erase the logo interior
+    const bgC=document.createElement('canvas'); bgC.width=W; bgC.height=H;
+    const bx=bgC.getContext('2d');
+    bx.globalAlpha=bgOpacity;
+    bx.fillStyle=bgColor;
+    bx.fillRect(0,0,W,H);
+    bx.globalAlpha=1;
+    // Erase logo interior from bgC → logo area becomes transparent (camera shows through)
+    bx.globalCompositeOperation='destination-out';
+    bx.drawImage(maskC,lx,ly);
+    bx.globalCompositeOperation='source-over';
+    ctx.drawImage(bgC,0,0);
+
+    // Step 3: fill texture INSIDE logo (if loaded)
+    if(fillImg && fillImg.complete && fillImg.naturalWidth){
+      // Draw fill scaled to cover logo area
       const fc=document.createElement('canvas'); fc.width=sz; fc.height=sz;
       const fx=fc.getContext('2d');
       const sc=Math.max(sz/fillImg.naturalWidth, sz/fillImg.naturalHeight);
-      fx.drawImage(fillImg,(sz-fillImg.naturalWidth*sc)/2,(sz-fillImg.naturalHeight*sc)/2,
+      fx.drawImage(fillImg,
+        (sz-fillImg.naturalWidth*sc)/2, (sz-fillImg.naturalHeight*sc)/2,
         fillImg.naturalWidth*sc, fillImg.naturalHeight*sc);
-      fx.globalCompositeOperation='destination-in'; fx.drawImage(imgSolid,0,0,sz,sz);
+      // Clip fill to logo interior only
+      fx.globalCompositeOperation='destination-in';
+      fx.drawImage(maskC,0,0);
+      fx.globalCompositeOperation='source-over';
+      // Place fill on main canvas (source-over: covers camera inside logo)
       ctx.drawImage(fc,lx,ly);
     }
 
-    // Stroke on top
+    // Step 4: stroke on top
     if(imgStroke.complete && imgStroke.naturalWidth){
       ctx.globalAlpha=strokeOpacity;
       ctx.drawImage(recolor(imgStroke,sz,sz,strokeColor),lx,ly);
@@ -469,32 +479,36 @@ function takePhoto(){
     cx.globalAlpha=1;
 
   } else {
-    // Build bg overlay offscreen
+    // Mode 2: camera base + bgColor outside logo + fill inside logo + stroke on top
+    const maskC=document.createElement('canvas'); maskC.width=sz; maskC.height=sz;
+    const mx=maskC.getContext('2d'); mx.drawImage(imgSolid,0,0,sz,sz);
+
+    // bgColor outside logo
     const bgC=document.createElement('canvas'); bgC.width=OUT; bgC.height=OUT;
     const bx=bgC.getContext('2d');
-    bx.fillStyle=bgColor;
     bx.globalAlpha=bgOpacity;
+    bx.fillStyle=bgColor;
     bx.fillRect(0,0,OUT,OUT);
     bx.globalAlpha=1;
-    if(imgSolid.complete){
-      const hc=buildHoleMask(imgSolid,OUT,OUT,lx,ly,sz);
-      bx.globalCompositeOperation='destination-out';
-      bx.drawImage(hc,0,0);
-      bx.globalCompositeOperation='source-over';
-    }
+    bx.globalCompositeOperation='destination-out';
+    bx.drawImage(maskC,lx,ly);
+    bx.globalCompositeOperation='source-over';
     cx.drawImage(bgC,0,0);
 
-    // Fill image in holes
-    if(fillImg && fillImg.complete && imgSolid.complete){
+    // fill inside logo
+    if(fillImg && fillImg.complete){
       const fc=document.createElement('canvas'); fc.width=sz; fc.height=sz;
       const fx=fc.getContext('2d');
       const sc=Math.max(sz/fillImg.naturalWidth, sz/fillImg.naturalHeight);
-      fx.drawImage(fillImg,(sz-fillImg.naturalWidth*sc)/2,(sz-fillImg.naturalHeight*sc)/2,
+      fx.drawImage(fillImg,
+        (sz-fillImg.naturalWidth*sc)/2,(sz-fillImg.naturalHeight*sc)/2,
         fillImg.naturalWidth*sc, fillImg.naturalHeight*sc);
-      fx.globalCompositeOperation='destination-in'; fx.drawImage(imgSolid,0,0,sz,sz);
+      fx.globalCompositeOperation='destination-in';
+      fx.drawImage(maskC,0,0);
       cx.drawImage(fc,lx,ly);
     }
 
+    // stroke on top
     cx.globalAlpha=strokeOpacity;
     if(imgStroke.complete) cx.drawImage(recolor(imgStroke,sz,sz,strokeColor),lx,ly);
     cx.globalAlpha=1;
