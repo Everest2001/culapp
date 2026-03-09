@@ -518,19 +518,32 @@ function takePhoto(){
 }
 
 function savePhoto(canvas){
-  canvas.toBlob(blob=>{
-    const fn='pompit_'+Date.now()+'.jpg';
-    if(navigator.canShare){
-      const f=new File([blob],fn,{type:'image/jpeg'});
-      if(navigator.canShare({files:[f]})){
-        navigator.share({files:[f]})
-          .then(()=>{showToast('Foto salvata ✓');resetFill();})
-          .catch(()=>dlFallback(blob,fn));
-        return;
+  try{
+    canvas.toBlob(blob=>{
+      if(!blob){showToast('Errore salvataggio');return;}
+      const fn='pompit_'+Date.now()+'.jpg';
+      if(navigator.canShare){
+        const f=new File([blob],fn,{type:'image/jpeg'});
+        try{
+          if(navigator.canShare({files:[f]})){
+            navigator.share({files:[f]})
+              .then(()=>{showToast('Foto salvata ✓');resetFill();})
+              .catch(()=>dlFallback(blob,fn));
+            return;
+          }
+        }catch(e){dlFallback(blob,fn);return;}
       }
-    }
-    dlFallback(blob,fn);
-  },'image/jpeg',0.93);
+      dlFallback(blob,fn);
+    },'image/jpeg',0.93);
+  }catch(e){
+    try{
+      const dataUrl=canvas.toDataURL('image/jpeg',0.93);
+      const fn='pompit_'+Date.now()+'.jpg';
+      const a=document.createElement('a'); a.download=fn; a.href=dataUrl;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      showToast('Foto salvata ✓'); resetFill();
+    }catch(e2){showToast('Errore: '+e2.message);}
+  }
 }
 
 function dlFallback(blob,fn){
